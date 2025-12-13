@@ -12,11 +12,20 @@ from openai import AsyncOpenAI
 import base64
 
 # Load .env
+# Load .env
 load_dotenv()
-TOKEN = os.getenv("TOKEN")
-WEATHER_API = os.getenv("WEATHER_API")
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 N8N_WEBHOOK = os.getenv("N8N_WEBHOOK")
+
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN is missing")
+
+bot = Bot(
+    token=BOT_TOKEN,
+    default=DefaultBotProperties(parse_mode="HTML")
+)
 
 # Initialize
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
@@ -179,7 +188,6 @@ async def free_text_chat(message: types.Message):
 
     is_food = any(word in user_text for word in food_keywords)
 
-    # 🍽 Yemekse → n8n'e gönder
     if is_food and N8N_WEBHOOK:
         try:
             async with aiohttp.ClientSession() as session:
@@ -191,23 +199,23 @@ async def free_text_chat(message: types.Message):
                         "text": message.text
                     }
                 )
-        except:
-            pass  # bot ASLA düşmez
+        except Exception as e:
+            print("n8n error:", e)
 
-    # 🤖 AI cevap
     try:
         response = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a friendly lifestyle assistant. If food is mentioned, estimate calories briefly."
+                    "content": "You are a friendly lifestyle assistant."
                 },
                 {"role": "user", "content": message.text}
             ]
         )
         answer = response.choices[0].message.content
-    except:
+    except Exception as e:
+        print("openai error:", e)
         answer = "⚠️ AI error."
 
     await message.answer(answer)
