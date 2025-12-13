@@ -179,7 +179,7 @@ async def free_text_chat(message: types.Message):
 
     is_food = any(word in user_text for word in food_keywords)
 
-    # 🍽 yemekse → n8n
+    # 🍽 Yemekse → n8n'e gönder
     if is_food and N8N_WEBHOOK:
         try:
             async with aiohttp.ClientSession() as session:
@@ -191,8 +191,8 @@ async def free_text_chat(message: types.Message):
                         "text": message.text
                     }
                 )
-        except Exception as e:
-            print("n8n error:", e)
+        except:
+            pass  # bot ASLA düşmez
 
     # 🤖 AI cevap
     try:
@@ -207,15 +207,14 @@ async def free_text_chat(message: types.Message):
             ]
         )
         answer = response.choices[0].message.content
-    except Exception as e:
-        print("AI error:", e)
+    except:
         answer = "⚠️ AI error."
 
     await message.answer(answer)
 
     if is_food:
         await message.answer("📌 Meal saved 💾")
-        
+
 # -------------------------
 # Run bot
 # -------------------------
