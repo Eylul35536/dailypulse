@@ -16,6 +16,7 @@ load_dotenv()
 TOKEN = os.getenv("TOKEN")
 WEATHER_API = os.getenv("WEATHER_API")
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+N8N_WEBHOOK = os.getenv("N8N_WEBHOOK")
 
 # Initialize
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
@@ -157,6 +158,63 @@ async def weather(message: types.Message):
     else:
         await message.answer("❌ Could not fetch weather.")
 
+# -------------------------
+# /addmeal  (BURAYA EKLE)
+# -------------------------
+@dp.message(Command("addmeal"))
+async def add_meal(message: types.Message):
+    await message.answer("🍽 Bana yediğin şeyi yaz: Örn: '200g tavuk 250 kalori'")
+
+# ----------------------------------
+# 💬 NATURAL TEXT CHAT BURAYA GELECEK
+# ----------------------------------
+@dp.message(F.text)
+async def free_text_chat(message: types.Message):
+    user_text = message.text.lower()
+
+    food_keywords = [
+        "food", "meal", "eat", "ate", "calorie", "calories",
+        "kcal", "lunch", "dinner", "breakfast", "snack"
+    ]
+
+    is_food = any(word in user_text for word in food_keywords)
+
+    # 🍽 Eğer yemekse → n8n
+    if is_food:
+        try:
+            async with aiohttp.ClientSession() as session:
+                await session.post(
+                    N8N_WEBHOOK,
+                    json={
+                        "user_id": message.from_user.id,
+                        "name": message.from_user.full_name,
+                        "text": message.text
+                    }
+                )
+        except:
+            pass  # ASLA botu düşürme
+
+    # 🤖 AI her zaman cevaplasın
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a friendly lifestyle assistant. If food is mentioned, estimate calories briefly."
+                },
+                {"role": "user", "content": message.text}
+            ]
+        )
+        answer = response.choices[0].message.content
+    except:
+        answer = "⚠️ AI error."
+
+    await message.answer(answer)
+
+    # 📌 yemekse küçük teyit
+    if is_food:
+        await message.answer("📌 Meal saved 💾")
 
 # -------------------------
 # Run bot

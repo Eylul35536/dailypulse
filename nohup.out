@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/root/daily_pulse/bot.py", line 97, in <module>
-    @dp.message_handler(content_types=ContentType.PHOTO)
-AttributeError: 'Dispatcher' object has no attribute 'message_handler'
